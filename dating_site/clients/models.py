@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from .watermark import watermark
+import json
 
 
 def watermarkImage(image_file):
@@ -35,20 +36,24 @@ class User(AbstractBaseUser, PermissionsMixin):
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)
     is_staff = models.BooleanField(default=False)
+    liked_list = models.TextField(blank=True, default="[-1, -2]")
 
     def user_directory_path(instance, filename):
-        """Путь, куда будет осуществлена загрузка: MEDIA_ROOT/user_<id>_<filename>"""
+        """Путь, куда будет осуществлена загрузка: MEDIA_ROOT/user_<email>_<filename>"""
         return 'images/user_{0}_{1}'.format(instance.email, filename)
 
     avatar = models.ImageField(verbose_name="Avatar", null=True, blank=True, upload_to=user_directory_path)
     Male = 'M'
     Female = 'F'
-    sex_Choices = ((Male, 'Male'), (Female, 'Female'),)
+    sex_Choices = (
+        (Male, 'Male'),
+        (Female, 'Female'),
+    )
     sex = models.CharField(
         max_length=1,
         choices=sex_Choices,
         default=Female,
-        help_text="Enter your gender",
+        help_text="Введите свой пол",
     )
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
@@ -61,7 +66,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     def save(self, *args, **kwargs):
         """Метод для сохранения аватарки с наложенной вотермаркой"""
         if self.avatar:
-            print(self.avatar)
             self.avatar = watermarkImage(self.avatar.file)
         super().save(*args, **kwargs)
 
@@ -74,3 +78,9 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def get_short_name(self):
         return self.first_name
+
+    def set_liked_list(self, x):
+        self.liked_list = json.dumps(x)
+
+    def get_liked_list(self):
+        return json.loads(self.liked_list)
