@@ -1,10 +1,12 @@
-from rest_framework import status, permissions
-from rest_framework.response import Response
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
-from rest_framework.generics import CreateAPIView, ListAPIView
-from django.core.mail import send_mail
 from django.conf import settings
+from django.core.mail import send_mail
+from geopy.distance import great_circle
+from rest_framework import permissions, status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.generics import CreateAPIView, ListAPIView
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+
 from .models import User
 from .serializers import UserRegistrSerializer, UserSerializer
 
@@ -17,8 +19,6 @@ def send_match_mails(user_list):
         message = "Вы понравились {0}! Почта участника: {1}".format(arg1, arg2)
         recipient = list()
         recipient.append(user_list[i].email)
-        print(recipient)
-        print(settings.DEFAULT_FROM_EMAIL)
         send_mail('Кажется, вы кому-то понравились...',
                   message,
                   settings.DEFAULT_FROM_EMAIL,
@@ -50,9 +50,21 @@ class UserListView(ListAPIView):
     paginate_by = 10
     permission_classes = [AllowAny]
 
+    def filter_queryset1(self, request, queryset):
+        alluser = queryset.exclude(id=self.request.user.id)
+        exclude_e = alluser
+        distparam = request.GET.get('distance')
+        if distparam:
+            for user in alluser:
+                from_loc = (self.request.user.latitude, self.request.user.latitude)
+                self_loc = (user.latitude, user.longitude)
+                distance = great_circle(from_loc, self_loc).km
+                if distance > float(distparam):
+                    exclude_e = exclude_e.exclude(id=user.id)
+        return exclude_e
+
     def get_queryset(self):
         """Фильтрует queryset по значениям из get запроса"""
-        queryset = User.objects.all()
         keys = ['first_name', 'last_name', 'sex']
         filters = {}
         req = self.request
@@ -60,6 +72,9 @@ class UserListView(ListAPIView):
             filter = req.query_params.getlist(key)
             if filter:
                 filters['{}__in'.format(key)] = filter
+        queryset = User.objects.all()
+        if req.GET.get('distance') and req.user.is_authenticated:
+            queryset = self.filter_queryset1(req, queryset)
         return queryset.filter(**filters)
 
 
@@ -67,26 +82,26 @@ class UserListView(ListAPIView):
 @permission_classes([permissions.IsAuthenticated])
 def UserMatchView(request, pk):
     if pk == request.user.id:
-        data = {}
+        data = dict()
         data['1'] = "Вы не можете отправить симпатию себе"
         return Response(data, status=status.HTTP_200_OK)
     user = User.objects.get(id=request.user.id)
-    own_liked_list = user.get_liked_list()
+    own_liked_list = user.liked_list
     liked_user = User.objects.filter(id=pk)
 
     if liked_user:
         liked_user = User.objects.get(id=pk)
         if not (pk in own_liked_list):
             own_liked_list.append(pk)
-            user.set_liked_list(own_liked_list)  # Добавляем к текущему юзеру в список лайков
+            user.liked_list = own_liked_list
             user.save(update_fields=['liked_list'])
 
     data = {}
     if liked_user:
-        liked_user_list = liked_user.get_liked_list()
+        liked_user_list = liked_user.liked_list
         if user.id in liked_user_list:
             st = "Это взаимная симпатия! Его/её электронная почта: "
-            data['1'] = st + liked_user.email  # Если взаимная симпатия, показываем в ответе почту
+            data['1'] = st + liked_user.email
             send_match_mails([user, liked_user])
             return Response(data, status=status.HTTP_200_OK)
     else:

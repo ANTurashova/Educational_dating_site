@@ -1,4 +1,5 @@
 from rest_framework import serializers
+
 from .models import User
 
 
@@ -41,15 +42,7 @@ class UserRegistrSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    # avatar = User.avatar
-
     class Meta:
         """Поля, которые будем использовать"""
         model = User
         fields = ['id', 'first_name', 'last_name', 'sex', 'avatar', 'liked_list']
-
-
-class UserLikedListSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ['liked_list']

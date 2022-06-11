@@ -1,7 +1,17 @@
-from django.db import models
+from random import randint
+
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.db import models
+
 from .watermark import watermark
-import json
+
+
+def random_long():
+    return randint(-179, 179) + randint(0, 999) / 1000
+
+
+def random_lat():
+    return randint(-89, 89) + randint(0, 999) / 1000
 
 
 def watermarkImage(image_file):
@@ -36,7 +46,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)
     is_staff = models.BooleanField(default=False)
-    liked_list = models.TextField(blank=True, default="[-1, -2]")
+    liked_list = models.JSONField(blank=True, default=list)
+    longitude = models.DecimalField(default=random_long(), decimal_places=3, max_digits=6)
+    latitude = models.DecimalField(default=random_lat(), decimal_places=3, max_digits=6)
 
     def user_directory_path(instance, filename):
         """Путь, куда будет осуществлена загрузка: MEDIA_ROOT/user_<email>_<filename>"""
@@ -78,9 +90,3 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def get_short_name(self):
         return self.first_name
-
-    def set_liked_list(self, x):
-        self.liked_list = json.dumps(x)
-
-    def get_liked_list(self):
-        return json.loads(self.liked_list)

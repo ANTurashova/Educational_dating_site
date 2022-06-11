@@ -1,11 +1,12 @@
-from imagekit.lib import Image, ImageEnhance
 from io import BytesIO
+
 from django.core.files import File
+from imagekit.lib import Image, ImageEnhance
 
 
 def reduce_opacity(im, opacity):
     """Возвращает изображение с уменьшенной непрозрачностью"""
-    assert opacity >= 0 and opacity <= 1
+    assert 0 <= opacity <= 1
     if im.mode != 'RGBA':
         im = im.convert('RGBA')
     else:
