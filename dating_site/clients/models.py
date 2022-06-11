@@ -34,7 +34,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(max_length=100, unique=True)
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)
-    is_staff = models.BooleanField(default=False)  # Статус админа
+    is_staff = models.BooleanField(default=False)
 
     def user_directory_path(instance, filename):
         """Путь, куда будет осуществлена загрузка: MEDIA_ROOT/user_<id>_<filename>"""

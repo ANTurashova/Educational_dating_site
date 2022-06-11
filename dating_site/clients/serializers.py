@@ -56,8 +56,9 @@ class UserRegistrSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
+    avatar = User.avatar
+
     class Meta:
         """Поля, которые будем использовать"""
         model = User
-        fields = ['email', 'first_name', 'last_name', 'sex', 'avatar']
-    avatar = User.avatar
+        fields = ['first_name', 'last_name', 'sex', 'avatar']

@@ -26,7 +26,19 @@ class RegistrUserView(CreateAPIView):
 
 class UserList(ListAPIView):
     """API endpoint, которая представляет собой список пользователей"""
-    queryset = User.objects.all()
-    # serializer_class = UserRegistrSerializer
+    paginate_by = 10
     permission_classes = [AllowAny]
     serializer_class = UserSerializer
+
+    def get_queryset(self):
+        """При необходимости ограничивает возвращенные покупки для данного пользователя
+        путем фильтрации по параметру запроса 'username' в URL-адресе"""
+        queryset = User.objects.all()
+        keys = ['first_name', 'last_name', 'sex']
+        filters = {}
+        req = self.request
+        for key in keys:
+            filter = req.query_params.getlist(key)
+            if filter:
+                filters['{}__in'.format(key)] = filter
+        return queryset.filter(**filters)
