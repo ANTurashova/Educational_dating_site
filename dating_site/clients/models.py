@@ -37,7 +37,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     Male = 'M'
     Female = 'F'
     sex_Choices = ((Male, 'Male'), (Female, 'Female'),)
-    Sex = models.CharField(
+    sex = models.CharField(
         max_length=1,
         choices=sex_Choices,
         default=Female,
