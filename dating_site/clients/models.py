@@ -1,5 +1,12 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from .watermark import watermark
+
+
+def watermarkImage(image_file):
+    """Обертка для накладывания вотермарки. Принимает File, возвращает файл BytesIO"""
+    mark = 'images/watermark/watermark.png'
+    return watermark(image_file, mark, 'scale', 0.45)
 
 
 class MyUserManager(BaseUserManager):
@@ -31,7 +38,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def user_directory_path(instance, filename):
         """Путь, куда будет осуществлена загрузка: MEDIA_ROOT/user_<id>_<filename>"""
-        return 'images/user_{0}_{1}'.format(instance.id, filename)
+        return 'images/user_{0}_{1}'.format(instance.email, filename)
 
     avatar = models.ImageField(verbose_name="Avatar", null=True, blank=True, upload_to=user_directory_path)
     Male = 'M'
@@ -50,6 +57,13 @@ class User(AbstractBaseUser, PermissionsMixin):
     def __str__(self):
         """Метод для отображения в админ панели"""
         return self.email
+
+    def save(self, *args, **kwargs):
+        """Метод для сохранения аватарки с наложенной вотермаркой"""
+        if self.avatar:
+            print(self.avatar)
+            self.avatar = watermarkImage(self.avatar.file)
+        super().save(*args, **kwargs)
 
     class Meta:
         verbose_name = 'user'
